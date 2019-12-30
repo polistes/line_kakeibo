@@ -46,10 +46,9 @@ class LineAPI():
     return False
 
   def get_display_name(self, user_id):
-    ## TODO: modify to get displayName
-    ## https://developers.line.biz/ja/reference/messaging-api/#anchor-0190762129db8ef085b86fff02f55c97027211f2
+    # https://developers.line.biz/ja/reference/messaging-api/#anchor-0190762129db8ef085b86fff02f55c97027211f2
     if user_id in self.id2name:
-      return user_id['user_id']
+      return self.id2name[user_id]
     else:
       url = 'https://api.line.me/v2/bot/profile/{}'.format(user_id)
       headers = {'Authorization': 'Bearer {}'.format(self.line_conf['access_token'])}
