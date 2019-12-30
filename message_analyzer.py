@@ -54,7 +54,12 @@ class MessageAnalyzer():
 
     if len(split_msg) == 1:
       # ex) 2000 食費
-      return self.create_value(user=post_user, price=price, kind=split_msg[0])
+      # TODO refactor
+      convert_post_user = self.get_user_name(post_user)
+      if convert_post_user:
+        return self.create_value(user=convert_post_user, price=price, kind=split_msg[0])
+      else:
+        return self.create_value(user=post_user, price=price, kind=split_msg[0])
 
     elif len(split_msg) == 2:
       written_user = self.get_user_name(split_msg[0])
