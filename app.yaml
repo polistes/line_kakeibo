@@ -1,7 +1,13 @@
-runtime: python27
-api_version: 1
-threadsafe: true
+runtime: python37
+# api_version: 1
+# threadsafe: true
+
+# handlers:
+# - url: /webhook
+#   script: main.app
 
 handlers:
+- url: /
+  script: auto
 - url: /webhook
-  script: main.app
+  script: auto

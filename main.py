@@ -1,65 +1,26 @@
-#-*- coding: utf-8 -*-
+from flask import Flask, request
 
-import webapp2
-
-import json
-
-import logging
-
-from line_api import LineAPI
+from webhook import Webhook
 from spreadsheet import SpreadSheet
 
-class MyWebhook(webapp2.RequestHandler):
+app = Flask(__name__)
+mywebhook = Webhook()
 
-  def __init__(self, request, response):
-    # self.tracker = SummaryTracker()
-    # logging.info("before webhook initialize")
-    # self.tracker.print_diff()
+@app.route("/webhook", methods=['POST'])
+def webhook():
+  global mywebhook
+  mywebhook.post(request)
+  return 'OK', 200
 
-    # https://stackoverflow.com/a/15624669
-    # https://webapp2.readthedocs.io/en/latest/api/webapp2.html#request-handlers
-    self.initialize(request, response)
+@app.route("/spreadsheet")
+def spreadsheet():
+  ss = SpreadSheet()
+  ss.append('ももこ', 'ももこ 200 テスト')
+  return 'OK', 200
 
-    self.line_api = LineAPI()
-    self.spreadsheet = SpreadSheet()
+@app.route('/')
+def hello_world():
+  return "Hello, World!"
 
-    # logging.info("after webhook initialize")
-    # self.tracker.print_diff()
-
-  def post(self):
-
-    # logging.info("post called")
-    # self.tracker.print_diff()
-    self.line_api.validate_segnature(self.request)
-
-    # logging.info("validated")
-    # self.tracker.print_diff()
-
-    msg = json.loads(self.request.body)
-    line_event = msg['events'][0]
-
-    if self.line_api.is_text_message(line_event):
-      display_name = self.line_api.get_display_name(line_event['source']['userId'])
-
-      message = line_event['message']['text']
-      logging.info("user: %s sent message: %s" % (display_name, message))
-
-      return_msg = self.spreadsheet.append(display_name, message)
-
-      # logging.info("after spreadsheet appended")
-      # self.tracker.print_diff()
-
-      self.line_api.send_replay(line_event, return_msg)
-
-      # logging.info("after line replayed")
-      # self.tracker.print_diff()
-    else:
-      logging.info("ignored non text message")
-      logging.info("  `-- event type: %s" % line_event['type'])
-      if line_event['type'] == 'message':
-        logging.info("  `-- message type: %s" % line_event['message']['type'])
-
-
-app = webapp2.WSGIApplication(
-        [('/webhook', MyWebhook)]
-      )
+if __name__ == '__main__':
+  app.run(host='127.0.0.1', port=8080, debug=True)

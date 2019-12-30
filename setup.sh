@@ -6,7 +6,7 @@ if [ ! -d libs ]
 then
   mkdir libs
 else
-  "libs directory already exists"
+  echo "libs directory already exists"
 fi
 
 pip install -t libs -r requirements.txt

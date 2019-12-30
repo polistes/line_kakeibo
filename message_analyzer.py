@@ -1,14 +1,22 @@
 #-*- coding: utf-8 -*-
 
 import json
+import logging
 import re
 
-import logging
+# from pympler.tracker import SummaryTracker
 
 class MessageAnalyzer():
 
   def __init__(self):
+    # self.tracker = SummaryTracker()
+    # print("before initialize")
+    # self.tracker.print_diff()
+
     self.load_user_dict()
+
+    # print("after initialized")
+    # self.tracker.print_diff()
 
   def load_user_dict(self):
     with open('conf/user_dict.json') as f:
@@ -21,6 +29,9 @@ class MessageAnalyzer():
         self.user_dict[alter] = name
 
   def analyze_message(self, post_user, message):
+    # print("analyze_message called")
+    # self.tracker.print_diff()
+
     match = re.search(r'([0-9]{3,}(円)?)', message)
     if match and len(match.groups()) <= 2:
       if len(match.groups()) == 1:
@@ -31,9 +42,15 @@ class MessageAnalyzer():
       logging.info('price not found in "%s"' % message)
       return self.create_value(exp=message)
 
-    message = re.sub(ur'[0-9]{3,}(円)?', u' ', message)
+    # print("price found")
+    # self.tracker.print_diff()
+
+    message = re.sub(r'[0-9]{3,}(円)?', u' ', message)
     message = re.sub(r' +', u' ', message)
     split_msg = message.split()
+
+    # print("price excluded and split")
+    # self.tracker.print_diff()
 
     if len(split_msg) == 1:
       # ex) 2000 食費
@@ -71,8 +88,8 @@ class MessageAnalyzer():
 
   def print_result(self, values):
     for key in values:
-      print '%s = %s' % (key, values[key])
-    print '-----'
+      print('%s = %s' % (key, values[key]))
+    print('-----')
 
   def convert_timed_row(self, unixtime, analyzed_msg):
     return [unixtime,
