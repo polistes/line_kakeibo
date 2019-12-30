@@ -15,17 +15,12 @@ class LineAPI():
     with open('conf/line.json') as f:
       self.line_conf = json.load(f)
       self.logger = logging.getLogger('flask.app')
+      self.id2name = {}
 
   def validate_segnature(self, request):
     # https://developers.line.biz/ja/docs/messaging-api/building-bot/#spy-anchor-e0e7507abac7b64bdaa502657638da62bab4190e
     ## Calculate message signature
     # https://stackoverflow.com/a/29161688
-    # print('get_data: ', request.get_data())
-    # print('get_data: ', type(request.get_data()))
-    # print('as_text: ', request.get_data(as_text=True))
-    # print('as_text: ', type(request.get_data(as_text=True)))
-    # print('encode: ', request.get_data(as_text=True).encode('utf-8'))
-    # print('encode: ', type(request.get_data(as_text=True).encode('utf-8')))
     hash = hmac.new(bytearray(self.line_conf['channel_secret'], 'utf-8'), request.get_data(),
                     hashlib.sha256).digest()
     calc_signature = base64.b64encode(hash).decode('utf-8')
@@ -53,7 +48,20 @@ class LineAPI():
   def get_display_name(self, user_id):
     ## TODO: modify to get displayName
     ## https://developers.line.biz/ja/reference/messaging-api/#anchor-0190762129db8ef085b86fff02f55c97027211f2
-    return user_id
+    if user_id in self.id2name:
+      return user_id['user_id']
+    else:
+      url = 'https://api.line.me/v2/bot/profile/{}'.format(user_id)
+      headers = {'Authorization': 'Bearer {}'.format(self.line_conf['access_token'])}
+      result = requests.get(url, headers = headers)
+      profile = json.loads(result.text)
+      self.id2name[user_id] = profile['displayName']
+      if result.status_code == 200:
+        self.logger.info('successfully get user profile {} -> {}'.format(user_id, profile['displayName']))
+        return profile['displayName']
+      else:
+        self.logger.warning('failed to get user profile of {} with status code: {}'.format(user_id, result.status_code))
+        return user_id
 
   def send_replay(self, event, response_body):
     response = {}
