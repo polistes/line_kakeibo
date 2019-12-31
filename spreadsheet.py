@@ -59,7 +59,7 @@ class SpreadSheet():
     analyzed = self.analyzer.analyze_message(post_user, message)
 
     row_value = self.analyzer.convert_timed_row(
-        utils.get_unixtime(),
+        utils.get_current_time(),
         analyzed)
 
     # print("analyzed")

@@ -96,11 +96,12 @@ class MessageAnalyzer():
       print('%s = %s' % (key, values[key]))
     print('-----')
 
-  def convert_timed_row(self, unixtime, analyzed_msg):
-    return [unixtime,
+  def convert_timed_row(self, dt, analyzed_msg):
+    return [dt.strftime('%Y/%m/%d'),
+            dt.strftime('%H:%M:%S'),
             analyzed_msg['user'],
-            analyzed_msg['price'],
             analyzed_msg['kind'],
+            analyzed_msg['price'],
             analyzed_msg['exp']]
 
 if __name__ == '__main__':
