@@ -54,6 +54,10 @@ class LineAPI():
       headers = {'Authorization': 'Bearer {}'.format(self.line_conf['access_token'])}
       result = requests.get(url, headers = headers)
       profile = json.loads(result.text)
+      if 'displayName' not in profile:
+        self.logger.warning('key \'displayName\' not found in profile: {}'.format(result.text))
+        return user_id
+
       self.id2name[user_id] = profile['displayName']
       if result.status_code == 200:
         self.logger.info('successfully get user profile {} -> {}'.format(user_id, profile['displayName']))
