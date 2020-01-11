@@ -52,7 +52,7 @@ class SpreadSheet():
                                      range='A1',
                                      body=body).execute()
     except HttpError as e:
-      logging.warning('error detected: BrokenPipeError: {}'.format(e._get_reason()))
+      logging.warning('error detected: HttpError')
       logging.warning('  `-- retry count: {}'.format(retry_count))
       if retry_count > 0:
         traceback.print_exc()
@@ -60,8 +60,8 @@ class SpreadSheet():
         self.append(post_user, message, retry_count=retry_count)
       else:
         raise e
-    except BrokenPipeError as e:
-      logging.warning('error detected: BrokenPipeError: {}'.format(e._get_reason()))
+    except ConnectionError as e:
+      logging.warning('error detected: ConnectionError')
       logging.warning('  `-- retry count: {}'.format(retry_count))
       if retry_count > 0:
         self.create_spreadsheets()
