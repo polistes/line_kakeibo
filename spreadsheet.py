@@ -37,7 +37,8 @@ class SpreadSheet():
     service = build('sheets', 'v4', credentials=credentials)
     return service.spreadsheets()
 
-  def append(self, post_user, message, retry_count=3):
+  def append(self, post_user, message):
+    '''spreadsheetの一番下に新しいメッセージを追加する'''
     analyzed = self.analyzer.analyze_message(post_user, message)
 
     row_value = self.analyzer.convert_timed_row(
@@ -46,32 +47,117 @@ class SpreadSheet():
 
     body = {'values': [row_value]}
 
-    try:
-      result = self.spreadsheet.values().append(spreadsheetId=self.spreadsheet_conf['id'],
-                                     valueInputOption='RAW',
-                                     range='A1',
-                                     body=body).execute()
-    except HttpError as e:
-      logging.warning('error detected: HttpError')
-      logging.warning('  `-- retry count: {}'.format(retry_count))
-      if retry_count > 0:
-        traceback.print_exc()
-        retry_count = retry_count - 1
-        self.append(post_user, message, retry_count=retry_count)
-      else:
-        raise e
-    except ConnectionError as e:
-      logging.warning('error detected: ConnectionError')
-      logging.warning('  `-- retry count: {}'.format(retry_count))
-      if retry_count > 0:
-        self.create_spreadsheets()
-        retry_count = retry_count - 1
-        self.append(post_user, message, retry_count=retry_count)
-      else:
-        traceback.print_exc()
-        raise e
+    request = self.spreadsheet.values().append(
+        spreadsheetId=self.spreadsheet_conf['id'],
+        valueInputOption='RAW',
+        range='A1',
+        body=body)
+    result = retry_request(request)
 
     if analyzed['exp']:
       return u"解析失敗: %s" % message
     else:
       return u'%s が %s として %s 円払いました' % (analyzed['user'], analyzed['kind'], analyzed['price'])
+
+  def retry_request(self, request, retry_count=3):
+    '''spreadsheetを操作するrequestを実行する関数
+    エラーが発生してもretry_countの回数だけ再実行してくれる'''
+    for i in range(0, retry_count):
+      try:
+        return request.execute()
+      except HttpError as e:
+        logging.warning('error detected: HttpError')
+        logging.warning('  `-- retry count: {}'.format(retry_count))
+        if i == retry_count - 1:
+          raise e
+        else:
+          traceback.print_exc()
+      except ConnectionError as e:
+        logging.warning('error detected: ConnectionError')
+        logging.warning('  `-- retry count: {}'.format(retry_count))
+        if i == retry_count - 1:
+          raise e
+        else:
+          traceback.print_exc()
+          self.create_spreadsheets()
+
+  def remove_last_row(self):
+    '''一番新しい行を削除して、削除した行の情報を返却する関数'''
+
+    request = self.spreadsheet.values().get(spreadsheetId=self.spreadsheet_conf['id'], range='A1:F')
+    response = self.retry_request(request)
+
+    row_index = len(response['values'])
+    if row_index == 1:
+      return ['今月の記録がありません']
+
+    row_value = response['values'][row_index-1]
+
+    target_range = 'A{}:F{}'.format(row_index, row_index)
+    request = self.spreadsheet.values().clear(spreadsheetId=self.spreadsheet_conf['id'], range=target_range)
+    response = self.retry_request(request)
+
+    return row_value
+
+  def get_sheet_id(self, title):
+    '''指定したタイトルのシートが存在するか確認する関数
+    見つかったらsheetIdを返す。
+    見つからなかったら-1を返す'''
+
+    if not title:
+      return -1
+
+    request = self.spreadsheet.get(spreadsheetId=self.spreadsheet_conf['id'])
+    response = self.retry_request(request)
+
+    sheets = response['sheets']
+    for sheet in sheets:
+      if sheet['properties']['title'] == title:
+        logging.info('sheet titled={} found'.format(title))
+        return sheet['properties']['sheetId']
+    logging.info('sheet titled={} not found'.format(title))
+    return -1
+
+
+  def copy_sheet_from_template(self, title):
+    '''templateシートをコピーして、一番左に適当な名前で配置する関数'''
+
+    template_sheet_id = self.get_sheet_id(title='template')
+    if template_sheet_id < 0:
+      logging.info('template not found')
+      sys.exit(1)
+
+    dest_body = {
+      'destination_spreadsheet_id': self.spreadsheet_conf['id']
+    }
+
+    request = self.spreadsheet.sheets().copyTo(
+            spreadsheetId = self.spreadsheet_conf['id'],
+            sheetId = template_sheet_id,
+            body = dest_body)
+    response = self.retry_request(request)
+    logging.info(response)
+
+    # 見つかったtemplateシートを0番目にtitleで指定されたシート名で作成する
+    copied_sheet_id = response['sheetId']
+    requests = []
+    requests.append({
+      'updateSheetProperties': {
+        'properties': {
+          'sheetId': copied_sheet_id,
+          'title': title,
+          'index': 0
+        },
+        'fields': 'title,index'
+      }
+    })
+
+    body = {
+        'requests': requests
+    }
+
+    request = self.spreadsheet.batchUpdate(
+        spreadsheetId = self.spreadsheet_conf['id'],
+        body = body)
+    response = self.retry_request(request)
+    logging.info('copied template and create sheet titled={} in index=0'.format(title))

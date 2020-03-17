@@ -15,7 +15,7 @@ def webhook():
 @app.route("/spreadsheet")
 def spreadsheet():
   ss = SpreadSheet()
-  ss.append('ももこ', 'ももこ 200 テスト')
+  ss.append('だれか', 'だれか 200 テスト')
   return 'OK', 200
 
 @app.route('/')
