@@ -52,7 +52,7 @@ class SpreadSheet():
         valueInputOption='RAW',
         range='A1',
         body=body)
-    result = retry_request(request)
+    result = self.retry_request(request)
 
     if analyzed['exp']:
       return u"解析失敗: %s" % message
