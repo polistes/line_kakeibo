@@ -49,7 +49,7 @@ class SpreadSheet():
 
     request = self.spreadsheet.values().append(
         spreadsheetId=self.spreadsheet_conf['id'],
-        valueInputOption='RAW',
+        valueInputOption='USER_ENTERED',
         range='A1',
         body=body)
     result = self.retry_request(request)
@@ -96,23 +96,37 @@ class SpreadSheet():
     # 改行で結合して返す
     return '\n'.join(maped_report)
 
-  def remove_last_row(self):
-    '''一番新しい行を削除して、削除した行の情報を返却する関数'''
-
+  def get_records(self):
     request = self.spreadsheet.values().get(spreadsheetId=self.spreadsheet_conf['id'], range='A1:F')
     response = self.retry_request(request)
 
-    row_index = len(response['values'])
+    return response['values']
+
+  def get_latest_record(self):
+    '''最新の記録を取得する'''
+    records = self.get_records()
+
+    row_index = len(records)
+    if row_index == 1:
+      return null
+
+    return records[-1]
+
+  def remove_latest_record(self):
+    '''一番新しい行を削除して、削除した行の情報を返却する関数'''
+    records = self.get_records()
+
+    row_index = len(records)
     if row_index == 1:
       return ['今月の記録がありません']
 
-    row_value = response['values'][row_index-1]
+    latest_record = records[-1]
 
     target_range = 'A{}:F{}'.format(row_index, row_index)
     request = self.spreadsheet.values().clear(spreadsheetId=self.spreadsheet_conf['id'], range=target_range)
     response = self.retry_request(request)
 
-    return row_value
+    return latest_record
 
   def get_sheet_id(self, title):
     '''指定したタイトルのシートが存在するか確認する関数

@@ -7,6 +7,7 @@ import logging
 
 from line_api import LineAPI
 from spreadsheet import SpreadSheet
+import utils
 
 class Webhook():
 
@@ -27,14 +28,14 @@ class Webhook():
       logging.info('text message received: user={}, message={}'.format(display_name, message))
 
       # 今月分のシートがあるかどうか判定し、なかったらtemplateからコピーする
-      now = datetime.now()
+      now = utils.get_current_time()
       sheet_title = '{}年{}月'.format(now.year, now.month)
       sheet_id = self.spreadsheet.get_sheet_id(title=sheet_title)
       if sheet_id < 0:
         self.spreadsheet.copy_sheet_from_template(title=sheet_title)
 
       if message == '削除' or message == '消して':
-        removed_row = self.spreadsheet.remove_last_row()
+        removed_row = self.spreadsheet.remove_latest_record()
         return_msg = '以下の記録を消しました:\n{}'.format(removed_row)
       elif message == 'レポート':
         return_msg = self.spreadsheet.get_this_month_report()
