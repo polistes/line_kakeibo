@@ -35,12 +35,9 @@ class Webhook():
 
       if message == '削除' or message == '消して':
         removed_row = self.spreadsheet.remove_last_row()
-        if len(removed_row) > 5 and removed_row[2] and removed_row[3] and removed_row[4]:
-          return_msg = '{} が {} に {} 円払った記録を消しました'.format(removed_row[2], removed_row[3], removed_row[4])
-        elif len(removed_row) > 6 and removed_row[5]:
-          return_msg = '備考: {} の記録を消しました'.format(removed_row[5])
-        else:
-          return_msg = '{} の記録を消しました'.format(removed_row)
+        return_msg = '以下の記録を消しました:\n{}'.format(removed_row)
+      elif message == 'レポート':
+        return_msg = self.spreadsheet.get_this_month_report()
       else:
         return_msg = self.spreadsheet.append(display_name, message)
 

@@ -81,6 +81,21 @@ class SpreadSheet():
           traceback.print_exc()
           self.create_spreadsheets()
 
+  def get_this_month_report(self):
+    '''今月の家計簿を額のレポートの文字列にして返す'''
+    request = self.spreadsheet.values().get(spreadsheetId=self.spreadsheet_conf['id'], range='H8:I')
+    response = self.retry_request(request)
+
+    # 金額が0でない項目を抽出
+    filtered_report = filter(lambda x: x[1]!='0', response['values'])
+    # 金額順にフィルタ
+    sorted_report = sorted(filtered_report, key=lambda x:x[1], reverse=True)
+    # テキスト変換準備
+    maped_report = list(map(lambda x:'{}: {}円'.format(x[0], x[1]), sorted_report))
+
+    # 改行で結合して返す
+    return '\n'.join(maped_report)
+
   def remove_last_row(self):
     '''一番新しい行を削除して、削除した行の情報を返却する関数'''
 
