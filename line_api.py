@@ -76,6 +76,22 @@ class LineAPI():
       self.logger.warning('failed to get user profile of {} with status code: {}'.format(user_id, result.status_code))
       return user_id
 
+  def post_request(self, url, data):
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer {}'.format(self.line_conf['access_token'])}
+
+    result = requests.post(
+                url,
+                data = data,
+                headers = headers)
+    if result.status_code == 200:
+      self.logger.info('succeeded')
+    else:
+      self.logger.warning('unexpected status code: %s', result.status_code)
+      self.logger.warning(' --> message: %s', result.text)
+
+
   def send_replay(self, event, response_body):
     response = {}
     response['replyToken'] = event['replyToken']
@@ -85,16 +101,21 @@ class LineAPI():
     response['messages'].append(response_event)
 
     url = 'https://api.line.me/v2/bot/message/reply'
-    headers = {'Content-Type': 'application/json',
-               'Authorization': 'Bearer {}'.format(self.line_conf['access_token'])}
     payload = json.dumps(response, ensure_ascii=False)
 
-    result = requests.post(
-                url,
-                data = payload.encode('utf-8'),
-                headers = headers)
-    if result.status_code == 200:
-      self.logger.info('succeeded')
-    else:
-      self.logger.warning('unexpected status code: %s', result.status_code)
-      self.logger.warning(' --> message: %s', result.text)
+    self.post_request(url, payload.encode('utf-8'))
+
+  def push_message(self, msg_text):
+    push_message = {
+        'to': self.line_conf['group_id'],
+        'messages': [
+          {
+            'type': 'text',
+            'text': msg_text
+          }
+        ]
+      }
+
+    url = 'https://api.line.me/v2/bot/message/push'
+    payload = json.dumps(push_message, ensure_ascii=False)
+    self.post_request(url, payload.encode('utf-8'))

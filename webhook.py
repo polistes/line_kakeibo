@@ -15,6 +15,22 @@ class Webhook():
     self.line_api = LineAPI()
     self.spreadsheet = SpreadSheet()
 
+  def daily_notice(self, request):
+    # リクエストの検証
+    # https://cloud.google.com/appengine/docs/standard/python3/scheduling-jobs-with-cron-yaml?hl=ja
+    try:
+      header_signature = request.headers['X-Appengine-Cron']
+      if not header_signature:
+        raise Exception('X-Appengine-Cron is set as False')
+    except KeyError:
+      raise Exception('X-Appengine-Cron is not set')
+
+    latest_record = self.spreadsheet.get_latest_record()
+    if utils.is_today(latest_record[0]):
+      logging.info('There is today\'s record')
+    else:
+      self.line_api.push_message('今日の記録した？')
+
   def post(self, request):
     self.line_api.validate_segnature(request)
 

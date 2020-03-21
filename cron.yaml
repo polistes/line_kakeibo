@@ -1,0 +1,6 @@
+cron:
+- description: "execute daily notice"
+  url: /daily_notice
+  schedule: every day 22:00
+  timezone: Asia/Tokyo
+

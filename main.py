@@ -28,6 +28,12 @@ def spreadsheet():
   ss.append('だれか', 'だれか 200 テスト')
   return 'OK', 200
 
+@app.route('/daily_notice')
+def daily_notice():
+  global mywebhook
+  mywebhook.daily_notice(request)
+  return 'OK', 200
+
 @app.route('/')
 def hello_world():
   return "Hello, World!"
